@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>How Generative IR Retrieves Documents Mechanistically</title>
+  <link rel="stylesheet" href="mini-default.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    header {
+            background-color: #2E5F7F;
+            color: #fff;
+            padding: 60px 0;
+            text-align: center;
+            height: 100%;
+        }
+        body {
+        background-color: #eee;
+    }
+    .container {
+    display: flex;
+    justify-content: center;
+    }
+    .card.wide {
+        min-width: 80%;
+    }
+    table:not(.horizontal) {
+        overflow: unset;
+        max-height: fit-content;
+        max-width: fit-content;
+    }
+  </style>
+</head>
+<body>
+	<header>
+		<h1>How Generative IR Retrieves Documents Mechanistically</h1>
+		<address style="margin: 0.5rem;">
+			<nobr><a href="https://anja.re/" target="_blank" style="color: #fff" >Anja Reusch</a>,</nobr>
+            <nobr><a href="https://belinkov.com/" target="_blank" style="color: #fff">Yonatan Belinkov</a></nobr>
+			<br>
+			<nobr><institute>Technion - IIT</institute></nobr>;
+		</address>
+		<a href="" target="_blank" class="button" style="color: #fff; background-color: #77131A;"><i class="ai ai-arxiv"></i> ArXiv</a>
+        <a href="https://huggingface.co/AnReu/DSI-large-TriviaQA-QG" target="_blank" class="button" style="color: #fff; background-color: #6093D3	;"><i class="fab fa-huggingface"></i> Models</a>
+		<a href="" target="_blank" class="button" style="color: #fff; background-color: #559384;"><i class="far fa-file-pdf"></i> PDF</a>
+		<a href="https://github.com/technion-cs-nlp/re-gen-ir" target="_blank" class="button" style="color: #fff; background-color: #EF8933; border-color: #212529;"><i class="fab fa-github"></i> Code</a>
+	</header>
+
+
+
+    <div class="container">
+        <div class="card wide">
+            <div class="section">
+                <h3>Walkthrough the Retrieval Process</h3>
+                <div class="row">
+                    
+                    <div class="col-sm-12 col-md-7 col-lg-7">    
+                        <b>Encoder.</b> 
+
+                        <ul>
+                            <li>Embeds the query</li>
+                            <li>Not required to encode information on the documents directly 
+                                as it can be replaced by an encoder that does not contain document specific information</li>
+                        </ul>
+
+                        <b>Priming Stage.</b> (Layers 0–6)
+
+                        <ul>
+                            <li>"Prepares" the residual stream for subsequent stages.</li>
+                            <li>MLP components move document id tokens to lower ranks and non-document id tokens to higher ranks.</li>
+                            <li>Does not contain query specific information.</li>
+                        </ul>
+
+                        <b>Bridging Stage.</b> (Layers 7–17)
+                        <ul>
+                            <li>Cross-attention moves information from the encoder to the decoder.</li>
+                            <li>Cross-attention heads output information in form of word tokens that resemble a form of query expansion.</li>
+                            <li>Output of cross-attention is used to activate neurons in the last stage.</li>
+                        </ul>
+                                                <b>Interaction Stage.</b> (Layers 18–23)
+                        <ul>
+                            <li>Neurons in MLPs are activated based on the output of the previous stage, promoting document identifiers.</li>
+                            <li>Cross-attention continues to output query information to the residual stream.</li>
+                            <li>Last layer: only MLPs are required, they remove all non-document id tokens to high ranks, such that only document id tokens are predicted by the model.</li>
+                            <li>In this stage, query and documents interact for the first time.</li>
+                        </ul>
+                        
+                        <b>Setting.</b>
+                        <ul>
+                            <li>DSI setup, atomic document identifiers, T5-large,</li>
+                            <li>Datasets: Natural Questions, TriviaQA, sizes: 10k - 220k documents.</li>
+                        </ul>
+                    </div>
+                    <div class="col-sm-12 col-md-5 col-lg-5">
+                        <figure>
+                        <img src="images/overview.pdf" style="width: 100%; height: auto;" alt="A flow through the transformer encoder-decoder, where the three stages that we find in our study are depicted."/>
+                        <figcaption>A simplified view of the retrieval process in the
+                            Generative IR models in our work. After the encoder processes the query, the decoder operates in three stages: (I) the
+                            Priming Stage, (II) the Bridging Stage, and (III) the Interaction Stage.</figcaption>
+                    </figure>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<div class="container">
+        <div class="card wide">
+            <div class="section"><h3>Generative Information Retrieval</h3>
+                <div class="row">
+                    <div class="col-sm-12 col-md-3 col-lg-3">
+                        <figure>       
+                            <img src="images/DSI_overview.png" style="width: 100%; height: auto;" alt="A diagram depicting the pass through an encoder-decoder model. The input is a query, the output is a document identifier."/>
+                            <figcaption>Overview of a transformer encoder-decoder for GenIR.</figcaption>
+                        </figure>
+                    </div>
+                    <div class="col-sm-12 col-md-9 col-lg-9">
+
+                        <ul>
+                            <li>Transformer-Encoder-Decoder Model, e.g., T5</li>
+                            <li>Training:
+                                <ul>
+                                    <li>Input: First <i>N</i> tokens of document <i>D</i>, or query for which <i>D</i> is relevant</li>
+                                    <li>Output: Document identifier of document <i>D</i></li>
+                                </ul>
+                            </li>
+                            <li>Inference (Retrieval):
+                                <ul>
+                                    <li>Input: Query</li>
+                                    <li>Output: ranked list of Document identifiers (tokens, ranked by probability)</li>
+                                </ul>
+                            </li>
+                            <li>Each document identifier is tokenized as a single token (= atomic document identifiers).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+</div>
+
+    <div class="container">
+        <div class="card wide">
+            <div class="section"><h3>The Role of the Encoder in GenIR</h3>
+                <b>Intuition.</b>
+                Investigating whether information on the document corpus are contained in the encoder or only in the decoder after training a GenIR model.
+                <br>
+                <div class="row">
+                    <div class="col-sm-12 col-md-3 col-lg-3">
+                <figure>
+                    <img src="images/swapped_enc.png">
+                </figure>
+            </div>
+            <div class="col-sm-12 col-md-3 col-lg-3">
+                <figure>
+                    <img src="images/t5-encoder.png">
+                </figure>
+            </div>
+            </div>
+            </div>
+            <div class="section">
+                <b>Results.</b>
+                <ul>
+                    <li>Replacing the trained encoder by an encoder that was not trained on {Doc1, ..., Doc10}: The missing documents can still be retrieved well. </li>
+                    <li>Replacing the trained encoder by the vanilla T5-encoder: The model can still perform retrieval!</li>
+                    <li>Conclusion: Documents are not (exclusively) stored in the encoder.</li>
+                    <li>Hypothesis: Encoder semantically encodes the query, decoder is reposible for query - document matching.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+<div class="container">
+    <div class="card wide">
+        <div class="section"><h3>Which Components are Crucial for Retrieval</h3>
+        </div>
+        <div class="section"><b>How much does each component contribute to the residual stream?</b> We plot the length and the angle of each component (MLP, self-attention, cross-attention) across the pass through the decoder.
+            <figure>
+                <img src="images/ratio_cosine_5models.pdf" class="media section">
+                <figcaption>Length (normalized to the contribution per layer) and angle (towards the residual stream in this layer) of the output of each component in each <i>decoder</i> layer for five models.</figcaption>
+            </figure>
+        <div>
+            <b>Conclusion.</b> We identify three stages during a pass through the decoder when looking at the contribution of each components:
+            <ul>
+                <li>Stage I: High contribution of MLPs, low to no contribution of Cross-Attention and Self-Attention,</li>
+                <li>Stage II: Contribution of Cross-Attention raises, while contribution of MLP declines.</li>
+                <li>Stage III: Contribution of MLP is highest, output of all components is directed to the opposite direction than the residual stream.</li>
+              </ul>
+        </div>
+        </div>
+
+        <div class="section">
+        <b>How much does it hurt to remove/ replace a component?</b> We perform zero-patching and mean patching on each component in each stage. In each run, we replace the output of a component in one stage with a zero vector or the mean vector of the output of that component aggregated over all queries for which the model previously ranked a relevant document on rank 1.        
+        <br>
+        <div class="row">
+            <div class="col-sm-12 col-md-11 col-lg-11">
+                <figure>
+                    <img src="images/patching_overview.png" class="media section">
+                    <figcaption>Some results of our patching experiments. We remove or replace certain components entirely in the indicated stages. The results are displayed as the percentage of documents that the partical model placed correctly on rank 1 (given all query-doc pairs that the full model solved correctly). For the minimal model, we ran the evaluation on the testset.</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <br>
+        <b>
+            Conclusion.
+        </b>
+        The results verify our intution gained from the pervious part. In Stage I and III, MLPs cannot be removed. In Stage II, Cross-Attention shows the highest impact when being removed/ replaced. Interestingly, replacing the MLP output in Stage I (and II) by their mean values does not seem to hurt performance drastically. This implies that they do not perform query specific computations.
+        The minimal model can retain most of the performance of the full model, which indicates that these components are crucial to perform <i>most</i> of the retrieval process.
+        </div>
+        
+    </div>
+</div>
+
+
+<div class="container">
+    <div class="card wide">
+        <div class="section"><h3>The Role of MLPs and Cross-Attention</h3>
+        </div>
+        <div class="section">
+            <b>Which component influences the rank of the relevant document?</b> We use <a href="https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens" target="_blank">LogitLens</a> to project the residual stream and the output of MLPs and Cross-Attention to the space of the logit. This way, we can identify which component writes information to the residual stream that influences the rank of the document indentifier directly. 
+            <figure>
+                <img src="images/ranks_5models.pdf" class="media section">
+                <figcaption>Development of the ranks of the (first) relevant document for five different datasets, displayed per decoder layer. The models separate document identifiers and non-document-identifiers early, and gradually improve the rank of the relevant document. The cross-attention output does not seem to follow this gradual progression. </figcaption>
+            </figure>
+            <b>Conclusion.</b> 
+            MLPs contribute directly to the rank of the document identifier, while the output of cross-attention does not seem directly correlated to the rank of the correct document.<br>
+            We assume that Cross-Attention writes relevant information to the residual stream, which MLPs read, process, and output to the logits.
+        </div>
+    
+        <div class="section">
+                <b>Do Cross-Attention and MLPs communicate?</b> 
+                <ul>
+                    <li>Investigation of the information flow within the decoder.</li>
+                    <li>Central question: Which component's output causes cross-attention/MLP to activate?</li>
+                    <li>"Activate" for MLPs: Input to activation function > 0, for cross-attention: What leads to the highest value in the attention pattern?</li>
+                </ul>
+            
+                <div class="row">
+                    <div class="col-sm-12 col-md-8 col-lg-8">
+                        <figure>
+                            <img src="images/reading_cr_mlps.png" class="media section">
+                            <figcaption>Components per stage that trigger cross-attention in Stage II and III (left) and activate MLPs in Stage III (right) of NQ10k. Stage III MLPs gets mostly activated from cross-attention in Stage II and III, while cross-attention in Stage II gets mostly activated by Stage I MLPs.</figcaption>
+                        </figure>
+                    </div>
+                </div>
+                <b>Conclusion.</b> 
+                <ul>
+                    <li>In Stage I: MLPs write query-agnostic information to the residual stream.</li>
+                    <li>In Stage II and III: Cross-attention reads in this information and writes <i>other</i> information back to the residual stream.</li>
+                    <li>In Stage III: MLPs read in information from cross-attention.</li>
+                </ul>
+        </div>
+        <div class="section">
+            <b>What does Cross-Attention write?</b>
+            <ul>
+                <li>Application of LogitLens to the output of each cross-attention head and the output of the entire component.</li>
+                <li>In less than one percent document-identifier tokens are within the Top 100 tokens in the output of cross-attention in Stage II.</li>
+                <li>Below are some examples of tokens that get promoted from cross-attention heads:</li>
+            </ul>
+            <table><thead>
+                <tr>
+                  <th>Query</th>
+                  <th>Cr.-Attn. Head</th>
+                  <th>Top 5 Words</th>
+                </tr></thead>
+              <tbody>
+                <tr>
+                  <td rowspan="2" data-label="Query">who wrote the harry potter books</td>
+                  <td data-label="Head" >Layer 14 - Head 2</td>
+                  <td data-label="Top 5 Words">about, written, about, tailored, privire</td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td data-label="Head">Layer 16 - Head 1</td>
+                  <td data-label="Top 5 Words">books, ouvrage, books, authors, book</td>
+                </tr>
+                <tr>
+                  <td rowspan="2" data-label="Query">who won the football championship in 2002</td>
+                  <td data-label="Head">Layer 16 - Head 1</td>
+                  <td data-label="Top 5 Words">year, YEAR, Year, year, jahr</td>
+                </tr>
+                <tr>
+                    <td></td>
+                  <td data-label="Head">Layer 16 - Head 13</td>
+                  <td data-label="Top 5 Words">football, Football, fotbal, soccer, NFL</td>
+                </tr>
+                <tr>
+                  <td rowspan="2" data-label="Query">will there be a sequel to baytown outlaws</td>
+                  <td data-label="Head">Layer 12 - Head 8</td>
+                  <td data-label="Top 5 Words">erneut, successor, similarly, repris, continuation</td>
+                </tr>
+                <tr>
+                    <td></td>
+                  <td data-label="Head">Layer 16 - Head 1</td>
+                  <td data-label="Top 5 Words">town, towns, city, Town, village</td>
+                </tr>
+              </tbody>
+              </table>
+        </div>
+    </div>
+</div>
+
+
+
+</body>
+<footer>
+    Made with <a href="https://minicss.us/">minicss</a>.
+</footer>
+</html>
