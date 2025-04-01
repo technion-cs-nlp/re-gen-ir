@@ -145,12 +145,15 @@
                 Investigating whether information on the document corpus are contained in the encoder or only in the decoder after training a GenIR model.
                 <br>
                 <div class="row">
-                    <div class="col-sm-12 col-md-3 col-lg-3">
+                    <div class="col-sm-1 col-md-2 col-lg-2">
+
+                    </div>
+                    <div class="col-sm-12 col-md-4 col-lg-4">
                 <figure>
                     <img src="images/swapped_enc.png">
                 </figure>
             </div>
-            <div class="col-sm-12 col-md-3 col-lg-3">
+            <div class="col-sm-12 col-md-4 col-lg-4">
                 <figure>
                     <img src="images/t5-encoder.png">
                 </figure>
@@ -175,8 +178,8 @@
         </div>
         <div class="section"><b>How much does each component contribute to the residual stream?</b> We plot the length and the angle of each component (MLP, self-attention, cross-attention) across the pass through the decoder.
             <figure>
-                <img src="images/ratio_cosine_5models.pdf" class="media section">
-                <figcaption>Length (normalized to the contribution per layer) and angle (towards the residual stream in this layer) of the output of each component in each <i>decoder</i> layer for five models.</figcaption>
+                <img src="images/length_cosine_plot_2.png" class="media section">
+                <figcaption>Length (normalized to the contribution per layer) and angle (towards the residual stream in this layer) of the output of each component in each <i>decoder</i> layer for NQ10k.</figcaption>
             </figure>
         <div>
             <b>Conclusion.</b> We identify three stages during a pass through the decoder when looking at the contribution of each components:
@@ -192,9 +195,9 @@
         <b>How much does it hurt to remove/ replace a component?</b> We perform zero-patching and mean patching on each component in each stage. In each run, we replace the output of a component in one stage with a zero vector or the mean vector of the output of that component aggregated over all queries for which the model previously ranked a relevant document on rank 1.        
         <br>
         <div class="row">
-            <div class="col-sm-12 col-md-11 col-lg-11">
+            <div class="col-sm-12 col-md-12 col-lg-12">
                 <figure>
-                    <img src="images/patching_overview.png" class="media section">
+                    <img src="images/patching_results_2.png" class="media section">
                     <figcaption>Some results of our patching experiments. We remove or replace certain components entirely in the indicated stages. The results are displayed as the percentage of documents that the partical model placed correctly on rank 1 (given all query-doc pairs that the full model solved correctly). For the minimal model, we ran the evaluation on the testset.</figcaption>
                 </figure>
             </div>
@@ -215,19 +218,6 @@
 <div class="container">
     <div class="card wide">
         <div class="section"><h3>The Role of MLPs and Cross-Attention</h3>
-        </div>
-        <div class="section">
-            <b>Which component influences the rank of the relevant document?</b> We use <a href="https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens" target="_blank">LogitLens</a> to project the residual stream and the output of MLPs and Cross-Attention to the space of the logit. This way, we can identify which component writes information to the residual stream that influences the rank of the document indentifier directly. 
-            <figure>
-                <img src="images/ranks_5models.pdf" class="media section">
-                <figcaption>Development of the ranks of the (first) relevant document for five different datasets, displayed per decoder layer. The models separate document identifiers and non-document-identifiers early, and gradually improve the rank of the relevant document. The cross-attention output does not seem to follow this gradual progression. </figcaption>
-            </figure>
-            <b>Conclusion.</b> 
-            MLPs contribute directly to the rank of the document identifier, while the output of cross-attention does not seem directly correlated to the rank of the correct document.<br>
-            We assume that Cross-Attention writes relevant information to the residual stream, which MLPs read, process, and output to the logits.
-        </div>
-    
-        <div class="section">
                 <b>Do Cross-Attention and MLPs communicate?</b> 
                 <ul>
                     <li>Investigation of the information flow within the decoder.</li>
@@ -253,8 +243,9 @@
         <div class="section">
             <b>What does Cross-Attention write?</b>
             <ul>
-                <li>Application of LogitLens to the output of each cross-attention head and the output of the entire component.</li>
-                <li>In less than one percent document-identifier tokens are within the Top 100 tokens in the output of cross-attention in Stage II.</li>
+                <li>Application of <a href="https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens" target="_blank">LogitLens</a> to the output of each cross-attention head and the output of the entire component.</li>
+                <li>Most tokens that get promoted by the cross-attentions' output in Stage II are word-tokens (non-document-identifier).</li>
+                <li>Only in less than one percent, document-identifier tokens are within the Top 100 tokens in the output of cross-attention in Stage II.</li>
                 <li>Below are some examples of tokens that get promoted from cross-attention heads:</li>
             </ul>
             <table><thead>
@@ -270,7 +261,7 @@
                   <td data-label="Top 5 Words">about, written, about, tailored, privire</td>
                 </tr>
                 <tr>
-                  <td></td>
+                  <td data-label="Query: who wrote the harry potter books"></td>
                   <td data-label="Head">Layer 16 - Head 1</td>
                   <td data-label="Top 5 Words">books, ouvrage, books, authors, book</td>
                 </tr>
@@ -280,7 +271,7 @@
                   <td data-label="Top 5 Words">year, YEAR, Year, year, jahr</td>
                 </tr>
                 <tr>
-                    <td></td>
+                    <td data-label="Query: who won the football championship in 2002"></td>
                   <td data-label="Head">Layer 16 - Head 13</td>
                   <td data-label="Top 5 Words">football, Football, fotbal, soccer, NFL</td>
                 </tr>
@@ -290,7 +281,7 @@
                   <td data-label="Top 5 Words">erneut, successor, similarly, repris, continuation</td>
                 </tr>
                 <tr>
-                    <td></td>
+                    <td data-label="Query: will there be a sequel to baytown outlaws"></td>
                   <td data-label="Head">Layer 16 - Head 1</td>
                   <td data-label="Top 5 Words">town, towns, city, Town, village</td>
                 </tr>
